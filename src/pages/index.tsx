@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function FinchPage() {
   const [apiBase, setApiBase] = React.useState<string>(DJANGO_API_BASE);
@@ -158,8 +159,8 @@ export default function FinchPage() {
         }).format(Number(n));
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="h-screen bg-background">
+      <div className="max-w-7xl mx-auto p-6 space-y-6 h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -168,7 +169,7 @@ export default function FinchPage() {
               Conversational finance agent UI
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <Input
               value={apiBase}
               onChange={(e) => setApiBase(e.target.value)}
@@ -192,10 +193,11 @@ export default function FinchPage() {
                 <SelectItem value="1">Company 1</SelectItem>
               </SelectContent>
             </Select>
+            <ThemeToggle />
           </div>
         </div>
 
-        <Tabs defaultValue="chat" className="w-full">
+        <Tabs defaultValue="chat" className="h-full w-full border">
           <TabsList>
             <TabsTrigger value="chat">Chat</TabsTrigger>
             <TabsTrigger value="dash">Dashboard</TabsTrigger>
@@ -203,11 +205,11 @@ export default function FinchPage() {
 
           {/* CHAT */}
           <TabsContent value="chat">
-            <Card>
+            <Card className=" h-full ">
               <CardHeader>
                 <CardTitle>Conversational Agent</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className=" h-full">
                 {/* <AgentChat agentBase={agentBase} companyId={companyId} /> */}
                 <AgentChat
                   agentBase={agentBase}
@@ -435,298 +437,6 @@ function RowsTable({ rows, empty }: { rows: any[]; empty?: string }) {
   );
 }
 
-// /** Chat panel: hits Django /api/agent/ask */
-// function AgentChat({
-//   agentBase,
-//   companyId,
-// }: {
-//   agentBase: string;
-//   companyId: number;
-// }) {
-//   const [text, setText] = React.useState("");
-//   const [busy, setBusy] = React.useState(false);
-//   const [msgs, setMsgs] = React.useState<
-//     { role: "user" | "agent"; content: string }[]
-//   >([]);
-
-//   async function send() {
-//     if (!text.trim()) return;
-//     const t = text;
-//     setMsgs((m) => [...m, { role: "user", content: t }]);
-//     setText("");
-//     setBusy(true);
-//     try {
-//       const res = await fetch("/api/agent/ask", {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           text: t,
-//           company_id: companyId,
-//         }),
-//       });
-//       const data = await res.json();
-//       console.log("data", data);
-//       setMsgs((m) => [...m, { role: "agent", content: data.message }]);
-//     } catch (e: any) {
-//       toast(e.message);
-//       setMsgs((m) => [...m, { role: "agent", content: `Oops: ${e.message}` }]);
-//     } finally {
-//       setBusy(false);
-//     }
-//   }
-
-//   return (
-//     <div className="space-y-3">
-//       <div className="h-64 overflow-auto border rounded p-3 bg-background">
-//         {msgs.length === 0 && (
-//           <div className="text-sm text-muted-foreground">
-//             Try: “show overdue invoices over 60 days”, “what’s my cash last
-//             Friday?”, “simulate runway revenue -10 expenses +5”.
-//           </div>
-//         )}
-//         {msgs.map((m, i) => (
-//           <div
-//             key={i}
-//             className={`mb-2 ${m.role === "user" ? "text-right" : "text-left"}`}
-//           >
-//             <span
-//               className={`inline-block px-3 py-2 rounded-lg ${
-//                 m.role === "user"
-//                   ? "bg-primary text-primary-foreground"
-//                   : "bg-muted"
-//               }`}
-//             >
-//               {m.content}
-//             </span>
-//           </div>
-//         ))}
-//       </div>
-//       <div className="flex gap-2">
-//         <Textarea
-//           value={text}
-//           onChange={(e) => setText(e.target.value)}
-//           placeholder="Ask your finance agent…"
-//           className="min-h-[44px]"
-//           onKeyDown={(e) => {
-//             if (e.key === "Enter" && !e.shiftKey) {
-//               e.preventDefault();
-//               send();
-//             }
-//           }}
-//         />
-//         <Button onClick={send} disabled={busy} className="shrink-0 self-start">
-//           Send
-//         </Button>
-//       </div>
-//     </div>
-//   );
-// }
-
-/** Chat panel: hits Django /api/agent/ask and handles follow-ups */
-// function AgentChat({
-//   agentBase,
-//   apiBase,
-//   companyId,
-// }: {
-//   agentBase: string; // e.g. http://localhost:8000 (if calling directly)
-//   apiBase: string; // used for rendering images/links from Django
-//   companyId: number;
-// }) {
-//   const [text, setText] = React.useState("");
-//   const [busy, setBusy] = React.useState(false);
-
-//   type ChatMsg = {
-//     role: "user" | "agent";
-//     content: string;
-//     // optional structured attachments rendered by the agent
-//     chartUrl?: string | null;
-//     csvUrl?: string | null;
-//   };
-
-//   const [msgs, setMsgs] = React.useState<ChatMsg[]>([]);
-
-//   // Persist the last context returned by the backend to power follow-ups
-//   const [lastContext, setLastContext] = React.useState<any | null>(null);
-//   const [lastFollowups, setLastFollowups] = React.useState<string[]>([]);
-
-//   // toggle between using proxy (/api/agent/ask) vs direct (agentBase)
-//   const agentAskPath =
-//     // agentBase && agentBase.startsWith("http")
-//     //   ? `${agentBase}/api/agent/ask`
-//     `/api/agent/ask`; // your Next proxy
-
-//   async function callAgent(userText: string, context?: any) {
-//     setBusy(true);
-//     try {
-//       const res = await fetch(agentAskPath, {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           text: userText,
-//           company_id: companyId,
-//           ...(context ? { context } : {}),
-//         }),
-//       });
-
-//       if (!res.ok) {
-//         const msg = await res.text();
-//         throw new Error(msg || `Agent request failed (${res.status})`);
-//       }
-
-//       const data: AgentAskResp & {
-//         data?: any;
-//         context?: any;
-//         followups?: string[];
-//       } = await res.json();
-
-//       // Build a friendly message + optional attachments
-//       const agentMsg: ChatMsg = {
-//         role: "agent",
-//         content: data?.message ?? "(no message)",
-//         chartUrl: data?.data?.chart_url
-//           ? // ensure absolute URL for <img> src
-//             absolutize(`${data?.data?.chart_url}`, apiBase)
-//           : null,
-//         csvUrl: data?.data?.csv_url
-//           ? absolutize(`${data?.data?.csv_url}`, apiBase)
-//           : null,
-//       };
-
-//       setMsgs((m) => [...m, agentMsg]);
-
-//       // Save context for follow-ups
-//       setLastContext(data?.context ?? null);
-//       setLastFollowups(Array.isArray(data?.followups) ? data.followups : []);
-//     } catch (e: any) {
-//       toast(e.message);
-//       setMsgs((m) => [...m, { role: "agent", content: `Oops: ${e.message}` }]);
-//     } finally {
-//       setBusy(false);
-//     }
-//   }
-
-//   async function send() {
-//     const t = text.trim();
-//     if (!t) return;
-//     setMsgs((m) => [...m, { role: "user", content: t }]);
-//     setText("");
-//     await callAgent(t, null); // new top-level question wipes follow-up context
-//   }
-
-//   async function sendFollowup(label: string) {
-//     // Show user “clicked” follow-up as their message
-//     setMsgs((m) => [...m, { role: "user", content: label }]);
-//     await callAgent(label, lastContext ?? undefined);
-//   }
-
-//   return (
-//     <div className="space-y-3">
-//       <div className="h-64 overflow-auto border rounded p-3 bg-background">
-//         {msgs.length === 0 && (
-//           <div className="text-sm text-muted-foreground">
-//             Try: “show overdue invoices over 60 days”, “what’s my cash last
-//             Friday?”, “simulate runway revenue -10 expenses +5”.
-//           </div>
-//         )}
-//         {msgs.map((m, i) => (
-//           <div
-//             key={i}
-//             className={`mb-3 ${m.role === "user" ? "text-right" : "text-left"}`}
-//           >
-//             <span
-//               className={`inline-block px-3 py-2 rounded-lg max-w-[90%] break-words ${
-//                 m.role === "user"
-//                   ? "bg-primary text-primary-foreground"
-//                   : "bg-muted"
-//               }`}
-//             >
-//               {m.content}
-//             </span>
-
-//             {/* Optional attachments rendered below the agent message */}
-//             {m.role === "agent" && (m.chartUrl || m.csvUrl) && (
-//               <div className="mt-2 space-y-2">
-//                 {m.chartUrl && (
-//                   <img
-//                     src={m.chartUrl}
-//                     className="w-full rounded border"
-//                     alt="Chart"
-//                     onError={(e) =>
-//                       ((e.target as HTMLImageElement).style.display = "none")
-//                     }
-//                   />
-//                 )}
-//                 {m.csvUrl && (
-//                   <div>
-//                     <a
-//                       className="underline text-primary"
-//                       href={m.csvUrl}
-//                       target="_blank"
-//                       rel="noreferrer"
-//                     >
-//                       Download CSV
-//                     </a>
-//                   </div>
-//                 )}
-//               </div>
-//             )}
-//           </div>
-//         ))}
-//       </div>
-
-//       {/* Suggested follow-ups from the agent */}
-//       {lastFollowups.length > 0 && (
-//         <div className="flex flex-wrap gap-2">
-//           {lastFollowups.map((f, i) => (
-//             <Button
-//               key={i}
-//               variant="secondary"
-//               size="sm"
-//               onClick={() => sendFollowup(f)}
-//               disabled={busy}
-//             >
-//               {f}
-//             </Button>
-//           ))}
-//         </div>
-//       )}
-
-//       <div className="flex gap-2">
-//         <Textarea
-//           value={text}
-//           onChange={(e) => setText(e.target.value)}
-//           placeholder="Ask your finance agent…"
-//           className="min-h-[44px]"
-//           onKeyDown={(e) => {
-//             if (e.key === "Enter" && !e.shiftKey) {
-//               e.preventDefault();
-//               send();
-//             }
-//           }}
-//         />
-//         <Button onClick={send} disabled={busy} className="shrink-0 self-start">
-//           Send
-//         </Button>
-//       </div>
-//     </div>
-//   );
-
-//   function absolutize(pathOrUrl: string, base: string) {
-//     // If already absolute, return as is
-//     if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
-//     // Ensure base ends without trailing slash
-//     const b = base.replace(/\/+$/, "");
-//     // Ensure path starts with /api/
-//     const p = pathOrUrl.startsWith("/api/")
-//       ? pathOrUrl
-//       : pathOrUrl.startsWith("/")
-//       ? `/api${pathOrUrl}`
-//       : `/api/${pathOrUrl}`;
-//     return `${b}${p}`;
-//   }
-// }
-
-/** Chat panel: hits Django /api/agent/ask and handles follow-ups */
 type AgentAskResp = {
   message?: string;
   data?: any;
@@ -737,8 +447,8 @@ type AgentAskResp = {
 type ChatMsg = {
   role: "user" | "agent";
   content: string;
-  chartUrl?: string | null;
-  csvUrl?: string | null;
+  chartUrlAbs?: string | null; // absolute URL for <img> (GET)
+  csvPathRel?: string | null; // relative path for POST via proxy
 };
 
 function AgentChat({
@@ -746,8 +456,8 @@ function AgentChat({
   apiBase,
   companyId,
 }: {
-  agentBase: string; // e.g. http://localhost:8000 if calling direct (we default to proxy)
-  apiBase: string; // base for absolute URLs to images/links
+  agentBase: string;
+  apiBase: string;
   companyId: number;
 }) {
   const [text, setText] = React.useState("");
@@ -756,11 +466,7 @@ function AgentChat({
   const [lastContext, setLastContext] = React.useState<any | null>(null);
   const [lastFollowups, setLastFollowups] = React.useState<string[]>([]);
 
-  // Use your Next proxy by default. Flip to direct if you want:
-  const agentAskPath = `/api/agent/ask`;
-  // const agentAskPath = agentBase?.startsWith("http")
-  //   ? `${agentBase}/api/agent/ask`
-  //   : `/api/agent/ask`;
+  const agentAskPath = `/api/agent/ask`; // Next proxy
 
   function absolutize(pathOrUrl: string, base: string) {
     if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
@@ -832,14 +538,17 @@ function AgentChat({
 
       const data: AgentAskResp = await res.json();
 
+      // IMPORTANT:
+      // - images: use absolute URL for <img> (data.chart_url)
+      // - csv: keep relative path (data.csv_url) to POST via Next proxy with lastContext.last_params
       const agentMsg: ChatMsg = {
         role: "agent",
         content: data?.message ?? "(no message)",
-        chartUrl: data?.data?.chart_url
+        chartUrlAbs: data?.data?.chart_url
           ? absolutize(String(data.data.chart_url), apiBase)
           : null,
-        csvUrl: data?.data?.csv_url
-          ? absolutize(String(data.data.csv_url), apiBase)
+        csvPathRel: data?.data?.csv_url
+          ? String(data.data.csv_url) // e.g. "/api/export/ar_csv"
           : null,
       };
 
@@ -854,11 +563,47 @@ function AgentChat({
     }
   }
 
+  async function downloadCsv(pathRel: string) {
+    try {
+      // We POST to the Next proxy at the SAME relative path
+      // Include last routed params so the backend can reproduce the results
+      const body = lastContext?.last_params ?? {};
+      const r = await fetch(pathRel, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!r.ok) {
+        const msg = await r.text();
+        throw new Error(msg || `CSV download failed (${r.status})`);
+      }
+
+      const ct = r.headers.get("content-type") || "";
+      const blob = await r.blob();
+
+      // filename from Content-Disposition if present
+      const cd = r.headers.get("content-disposition") || "";
+      const match = /filename="?([^"]+)"?/.exec(cd || "");
+      const filename = match?.[1] || "export.csv";
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      toast(e.message);
+    }
+  }
+
   async function send() {
     const t = text.trim();
     if (!t) return;
 
-    // Quick “reset” command to drop context
     if (t.toLowerCase() === "reset") {
       setText("");
       setLastContext(null);
@@ -878,7 +623,7 @@ function AgentChat({
     setText("");
 
     const ctx = looksLikeFollowup(t) && lastContext ? lastContext : undefined;
-    await callAgent(t, ctx); // include context automatically for follow-up-ish text
+    await callAgent(t, ctx);
   }
 
   async function sendFollowup(label: string) {
@@ -888,7 +633,7 @@ function AgentChat({
 
   return (
     <div className="space-y-3">
-      <div className="h-64 overflow-auto border rounded p-3 bg-background">
+      <div className="min-h-[90%] overflow-auto border rounded p-3 bg-background">
         {msgs.length === 0 && (
           <div className="text-sm text-muted-foreground">
             Try: “show overdue invoices over 60 days”, “what’s my cash last
@@ -911,11 +656,11 @@ function AgentChat({
               {m.content}
             </span>
 
-            {m.role === "agent" && (m.chartUrl || m.csvUrl) && (
+            {m.role === "agent" && (m.chartUrlAbs || m.csvPathRel) && (
               <div className="mt-2 space-y-2">
-                {m.chartUrl && (
+                {m.chartUrlAbs && (
                   <img
-                    src={m.chartUrl}
+                    src={m.chartUrlAbs}
                     className="w-full rounded border"
                     alt="Chart"
                     onError={(e) =>
@@ -923,16 +668,16 @@ function AgentChat({
                     }
                   />
                 )}
-                {m.csvUrl && (
+                {m.csvPathRel && (
                   <div>
-                    <a
-                      className="underline text-primary"
-                      href={m.csvUrl}
-                      target="_blank"
-                      rel="noreferrer"
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto"
+                      onClick={() => downloadCsv(m.csvPathRel!)}
+                      disabled={busy}
                     >
                       Download CSV
-                    </a>
+                    </Button>
                   </div>
                 )}
               </div>

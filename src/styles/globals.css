@@ -78,12 +78,8 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* Rely on explicit `.dark` class via next-themes.
+   Removing system-level override avoids forcing dark when user selected light. */
 
 body {
   background: var(--background);
